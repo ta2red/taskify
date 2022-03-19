@@ -1,20 +1,71 @@
-import { Logo } from './logo'
+import { useState } from "preact/hooks";
+import preact from "preact";
+import InputField from "./components/InputField";
+import { Todo } from "./model";
+import TodoList from "./components/TodoList";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "react-beautiful-dnd";
 
-export function App() {
+const App = () => {
+  const [todo, setTodo] = useState<string>("");
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [completedTodos, setCompletedTodos] = useState<Todo[]>([]);
+
+  const handleAdd = (e: Event) => {
+    e.preventDefault();
+    if (todo) {
+      setTodos([...todos, { id: Date.now(), todo, isDone: false }]);
+      setTodo("");
+    }
+  };
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+    console.log(result);
+    if (!destination) return;
+
+    if (
+      destination?.droppableId === source.droppableId &&
+      destination.index === source.index
+    )
+      return;
+
+    let add,
+      active = todos,
+      complete = completedTodos;
+    if (source.droppableId === "TodosList") {
+      add = active[source.index];
+      active.splice(source.index, 1);
+    } else {
+      add = complete[source.index];
+      complete.splice(source.index, 1);
+    }
+
+    if (destination.droppableId === "TodosList") {
+      active.splice(destination.index, 0, add);
+    } else {
+      complete.splice(destination.index, 0, add);
+    }
+    setCompletedTodos(complete);
+    setTodos(active);
+  };
   return (
-    <>
-      <Logo />
-      <p>Hello Vite + Preact!</p>
-      <p>
-        <a
-          class="link"
-          href="https://preactjs.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Preact
-        </a>
-      </p>
-    </>
-  )
-}
+    <DragDropContext onDragEnd={() => {}}>
+      <div className="App">
+        <span className="heading">Taskify</span>
+        <InputField todo={todo} setTodo={setTodo} handleAdd={handleAdd} />
+        <TodoList
+          todos={todos}
+          setTodos={setTodos}
+          completedTodos={completedTodos}
+          setCompletedTodos={setCompletedTodos}
+        />
+      </div>
+    </DragDropContext>
+  );
+};
+
+export default App;
